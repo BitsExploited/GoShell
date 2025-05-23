@@ -11,7 +11,7 @@ import (
 var _ = fmt.Fprint
 
 func isBuiltIn(command string) bool {
-	builtIns := []string{"exit 0", "echo", "type"}
+	builtIns := []string{"exit", "echo", "type"}
 	for _, i := range builtIns {
 		if command == i {
 			return true
