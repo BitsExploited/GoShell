@@ -15,7 +15,7 @@ import (
 var _ = fmt.Fprint
 
 func isBuiltIn(command string) bool {
-	builtIns := []string{"exit", "echo", "type", "pwd"}
+	builtIns := []string{"exit", "echo", "type", "pwd", "cd"}
 	for _, i := range builtIns {
 		if command == i {
 			return true
@@ -61,6 +61,26 @@ func exitCommand(args []string) {
 	}
 }
 
+func cdCommand(args []string) {
+	if len(args) == 0 || args[0] == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("error getting home directory: %v\n", err)
+			return
+		}
+		err = os.Chdir(home)
+		if err != nil {
+			fmt.Printf("error changing to home directory: %v\n", err)
+		}
+		return
+	}
+	err := os.Chdir(args[0])
+	if err != nil {
+		fmt.Printf("cd: %s: No such file or directory\n", args[0])
+		return
+	}
+}
+
 func pwdCommand() {
 	pwd , err := os.Getwd()
 	if err != nil {
@@ -103,6 +123,8 @@ func main() {
 		args := commandParts[1:]
 
 		switch command {
+		case "cd":
+			cdCommand(args)
 		case "pwd":
 			pwdCommand()
 		case "exit":
