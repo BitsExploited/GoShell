@@ -1,15 +1,14 @@
 package main
 
-
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"bytes"
 )
 
 // Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
@@ -83,7 +82,7 @@ func cdCommand(args []string) {
 }
 
 func pwdCommand() {
-	pwd , err := os.Getwd()
+	pwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -91,8 +90,8 @@ func pwdCommand() {
 	fmt.Println(pwd)
 }
 
-func echoCommand(argument []string) {
-	echoStr := strings.Join(argument, " ")
+func echoCommand(args []string) {
+	echoStr := strings.Join(args, " ")
 	fmt.Println(echoStr)
 }
 
@@ -111,19 +110,78 @@ func typeCommand(argument string, path string) {
 	return
 }
 
+// parseCommand tokenizes the input string, respecting single and double quotes
+func parseCommand(input string) []string {
+	var result []string
+	var current strings.Builder
+	var inSingleQuote, inDoubleQuote bool
+	input = strings.TrimSpace(input)
+
+	for i := 0; i < len(input); i++ {
+		c := input[i]
+
+		if inSingleQuote {
+			if c == '\'' {
+				inSingleQuote = false
+			} else {
+				current.WriteByte(c)
+			}
+			continue
+		}
+
+		if inDoubleQuote {
+			if c == '"' {
+				inDoubleQuote = false
+			} else {
+				current.WriteByte(c)
+			}
+			continue
+		}
+
+		if c == '\'' {
+			inSingleQuote = true
+			continue
+		}
+
+		if c == '"' {
+			inDoubleQuote = true
+			continue
+		}
+
+		if c == ' ' || c == '\t' {
+			if current.Len() > 0 {
+				result = append(result, current.String())
+				current.Reset()
+			}
+			continue
+		}
+
+		current.WriteByte(c)
+	}
+
+	if current.Len() > 0 {
+		result = append(result, current.String())
+	}
+
+	return result
+}
+
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		command, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		reader := bufio.NewReader(os.Stdin)
+		command, _ := reader.ReadString('\n')
 
-		command = strings.TrimSpace(command)
-		commandParts := strings.Fields(command)
+		commandParts := parseCommand(command)
+		if len(commandParts) == 0 {
+			continue
+		}
 
 		path := os.Getenv("PATH")
-		command = commandParts[0]
+		commandName := commandParts[0]
 		args := commandParts[1:]
 
-		switch command {
+		switch commandName {
 		case "cd":
 			cdCommand(args)
 		case "pwd":
@@ -133,9 +191,13 @@ func main() {
 		case "echo":
 			echoCommand(args)
 		case "type":
-			typeCommand(args[0], path)
+			if len(args) > 0 {
+				typeCommand(args[0], path)
+			} else {
+				fmt.Println("type: missing argument")
+			}
 		default:
-			executeCommand(command, args)
+			executeCommand(commandName, args)
 		}
 	}
 }
