@@ -117,9 +117,14 @@ func parseCommand(input string) []string {
 				current.WriteByte(c)
 			} else if inDoubleQuote {
 				// Inside double quotes, backslash escapes certain characters
-				// For simplicity, we'll escape the next character regardless
-				current.WriteByte(nextChar)
-				i++ // Skip the next character since we've processed it
+				if nextChar == '\\' || nextChar == '"' || nextChar == ' ' {
+					// Escape these characters by writing the literal character
+					current.WriteByte(nextChar)
+					i++ // Skip the next character since we've processed it
+				} else {
+					// For other characters, write the backslash literally
+					current.WriteByte(c)
+				}
 			} else {
 				// Outside quotes, backslash escapes the next character
 				current.WriteByte(nextChar)
