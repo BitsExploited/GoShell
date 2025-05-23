@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -20,28 +21,46 @@ func isBuiltIn(command string) bool {
 	return false
 }
 
+func echoCommand(argument []string) {
+	echoStr := strings.Join(argument, " ")
+	fmt.Println(echoStr)
+}
+
+func typeCommand(argument string, path string) {
+	if isBuiltIn(argument) {
+		fmt.Printf("%s is a shell builtin\n", argument)
+		return
+	}
+
+	os.Setenv("PATH", path)
+	if cmdPath, err := exec.LookPath(argument); err == nil {
+		fmt.Printf("%s is %s\n", argument, cmdPath)
+	} else {
+		fmt.Printf("%s: not found\n", argument)
+	}
+}
+
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
-		command, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		if err != nil {
-			fmt.Fprint(os.Stderr, "Error reading input: ", err)
-			os.Exit(1)
-		}
-		command = strings.TrimSuffix(command, "\n")
+		command, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 		
-		if command == "exit 0" {
+		command = strings.TrimSpace(command)
+		commandParts := strings.Fields(command)
+
+		path := os.Getenv("PATH")
+		command = commandParts[0]
+		args := commandParts[1:]
+
+		if command == "exit" {
 			break
-		} else if strings.HasPrefix(command, "echo ") {
-			phrase := command[5:]
-			fmt.Println(phrase)
+
+		} else if strings.HasPrefix(command, "echo") {
+			echoCommand(args)
+
 		} else if strings.HasPrefix(command, "type") {
-			phrase := command[5:]
-			if isBuiltIn(phrase) {
-				fmt.Println(phrase + " is a shell builtin")
-			} else {
-				fmt.Printf("%s: not found\n", phrase)
-			}
+			typeCommand(args[0], path)
+
 		} else {
 			fmt.Printf("%s: command not found\n", command)
 		}
