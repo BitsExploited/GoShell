@@ -1,5 +1,4 @@
 package main
-
 import (
 	"bufio"
 	"bytes"
@@ -10,10 +9,8 @@ import (
 	"strconv"
 	"strings"
 )
-
 // Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
 var _ = fmt.Fprint
-
 func isBuiltIn(command string) bool {
 	builtIns := []string{"exit", "echo", "type", "pwd", "cd"}
 	for _, i := range builtIns {
@@ -23,7 +20,6 @@ func isBuiltIn(command string) bool {
 	}
 	return false
 }
-
 func executeCommand(name string, args []string) {
 	_, found := checkFileInPath(name)
 	if found {
@@ -40,7 +36,6 @@ func executeCommand(name string, args []string) {
 		fmt.Printf("%s: command not found\n", name)
 	}
 }
-
 func checkFileInPath(file string) (string, bool) {
 	paths := strings.Split(os.Getenv("PATH"), ":")
 	for _, pathDir := range paths {
@@ -50,7 +45,6 @@ func checkFileInPath(file string) (string, bool) {
 	}
 	return "", false
 }
-
 func exitCommand(args []string) {
 	if len(args) > 0 {
 		value, err := strconv.Atoi(args[0])
@@ -60,7 +54,6 @@ func exitCommand(args []string) {
 		os.Exit(value)
 	}
 }
-
 func cdCommand(args []string) {
 	if len(args) == 0 || args[0] == "~" {
 		home, err := os.UserHomeDir()
@@ -80,7 +73,6 @@ func cdCommand(args []string) {
 		return
 	}
 }
-
 func pwdCommand() {
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -89,18 +81,15 @@ func pwdCommand() {
 	}
 	fmt.Println(pwd)
 }
-
 func echoCommand(args []string) {
 	echoStr := strings.Join(args, " ")
 	fmt.Println(echoStr)
 }
-
 func typeCommand(argument string, path string) {
 	if isBuiltIn(argument) {
 		fmt.Printf("%s is a shell builtin\n", argument)
 		return
 	}
-
 	os.Setenv("PATH", path)
 	if cmdPath, err := exec.LookPath(argument); err == nil {
 		fmt.Printf("%s is %s\n", argument, cmdPath)
@@ -109,17 +98,36 @@ func typeCommand(argument string, path string) {
 	}
 	return
 }
-
-// parseCommand tokenizes the input string, respecting single and double quotes
+// parseCommand tokenizes the input string, respecting single and double quotes and backslash escaping
 func parseCommand(input string) []string {
 	var result []string
 	var current strings.Builder
 	var inSingleQuote, inDoubleQuote bool
 	input = strings.TrimSpace(input)
-
+	
 	for i := 0; i < len(input); i++ {
 		c := input[i]
-
+		
+		// Handle backslash escaping
+		if c == '\\' && i+1 < len(input) {
+			nextChar := input[i+1]
+			
+			if inSingleQuote {
+				// Inside single quotes, backslashes are literal
+				current.WriteByte(c)
+			} else if inDoubleQuote {
+				// Inside double quotes, backslash escapes certain characters
+				// For simplicity, we'll escape the next character regardless
+				current.WriteByte(nextChar)
+				i++ // Skip the next character since we've processed it
+			} else {
+				// Outside quotes, backslash escapes the next character
+				current.WriteByte(nextChar)
+				i++ // Skip the next character since we've processed it
+			}
+			continue
+		}
+		
 		if inSingleQuote {
 			if c == '\'' {
 				inSingleQuote = false
@@ -128,7 +136,7 @@ func parseCommand(input string) []string {
 			}
 			continue
 		}
-
+		
 		if inDoubleQuote {
 			if c == '"' {
 				inDoubleQuote = false
@@ -137,17 +145,17 @@ func parseCommand(input string) []string {
 			}
 			continue
 		}
-
+		
 		if c == '\'' {
 			inSingleQuote = true
 			continue
 		}
-
+		
 		if c == '"' {
 			inDoubleQuote = true
 			continue
 		}
-
+		
 		if c == ' ' || c == '\t' {
 			if current.Len() > 0 {
 				result = append(result, current.String())
@@ -155,32 +163,28 @@ func parseCommand(input string) []string {
 			}
 			continue
 		}
-
+		
 		current.WriteByte(c)
 	}
-
+	
 	if current.Len() > 0 {
 		result = append(result, current.String())
 	}
-
+	
 	return result
 }
-
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 		reader := bufio.NewReader(os.Stdin)
 		command, _ := reader.ReadString('\n')
-
 		commandParts := parseCommand(command)
 		if len(commandParts) == 0 {
 			continue
 		}
-
 		path := os.Getenv("PATH")
 		commandName := commandParts[0]
 		args := commandParts[1:]
-
 		switch commandName {
 		case "cd":
 			cdCommand(args)
