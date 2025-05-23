@@ -24,9 +24,9 @@ func main() {
 
 		if command == "exit" {
 			if command == "exit 0" {
-				break
+				os.Exit(0)
 			} else {
-				fmt.Printf("%s: command not found", command)
+				fmt.Printf("%s: command not found\n", command)
 			}
 		}
 
