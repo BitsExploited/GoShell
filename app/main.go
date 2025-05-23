@@ -56,7 +56,7 @@ func exitCommand(args []string) {
 }
 func cdCommand(args []string) {
 	if len(args) == 0 || args[0] == "~" {
-		home, err := os.UserHomeDir()
+		home, err := os.Getwd()
 		if err != nil {
 			fmt.Printf("error getting home directory: %v\n", err)
 			return
@@ -179,8 +179,12 @@ func parseCommand(input string) []string {
 	return result
 }
 func main() {
+
 	for {
-		fmt.Fprint(os.Stdout, "$ ")
+		pwd, err := os.Getwd()
+		if err != nil {
+		}
+		fmt.Printf("[%s@%s %s]$ ", "bitsexploited", "archer", pwd)
 		reader := bufio.NewReader(os.Stdin)
 		command, _ := reader.ReadString('\n')
 		commandParts := parseCommand(command)
