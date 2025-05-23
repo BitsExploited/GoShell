@@ -61,6 +61,15 @@ func exitCommand(args []string) {
 	}
 }
 
+func pwdCommand() {
+	pwd , err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(pwd)
+}
+
 func echoCommand(argument []string) {
 	echoStr := strings.Join(argument, " ")
 	fmt.Println(echoStr)
@@ -94,6 +103,8 @@ func main() {
 		args := commandParts[1:]
 
 		switch command {
+		case "pwd":
+			pwdCommand()
 		case "exit":
 			exitCommand(args)
 		case "echo":
